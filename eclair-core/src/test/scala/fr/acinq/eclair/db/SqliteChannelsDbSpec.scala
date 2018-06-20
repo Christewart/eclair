@@ -20,7 +20,7 @@ import java.sql.DriverManager
 
 import fr.acinq.bitcoin.BinaryData
 import fr.acinq.eclair.TestConstants
-import fr.acinq.eclair.db.sqlite.{SqliteChannelsDb, SqlitePendingRelayDb}
+import fr.acinq.eclair.db.sqlite.{SqliteChannelsDb, SqlitePendingRelayDb, SqliteUtils}
 import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import org.scalatest.junit.JUnitRunner
@@ -38,14 +38,19 @@ class SqliteChannelsDbSpec extends FunSuite with BeforeAndAfterAll {
   }
 
   test("add/remove/list channels") {
-    val sqlite = inmem
+
     val db = new SqliteChannelsDb(dbConfig)
+    db.createTables
+    val res: Int = SqliteUtils.using(db.dbConfig.getConnection().createStatement()) { statement =>
+      statement.executeQuery(s"SELECT count(*) FROM ${db.DB_NAME} WHERE type='table' AND name='local_channels'").getInt(0)
+    }
+    assert(res == 1)
     new SqlitePendingRelayDb(dbConfig) // needed by db.removeChannel
 
     val channel = ChannelStateSpec.normal
 
     val commitNumber = 42
-    val paymentHash1 = BinaryData("42" * 300)
+    val paymentHash1 = BinaryData(".s42" * 300)
     val cltvExpiry1 = 123
     val paymentHash2 = BinaryData("43" * 300)
     val cltvExpiry2 = 656
@@ -69,5 +74,4 @@ class SqliteChannelsDbSpec extends FunSuite with BeforeAndAfterAll {
     assert(db.listHtlcHtlcInfos(channel.channelId, commitNumber).toList == Nil)
   }
 
-  override def afterAll(): Unit = dbConfig.close()
 }
