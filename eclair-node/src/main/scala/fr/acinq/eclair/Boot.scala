@@ -29,27 +29,34 @@ import scala.util.{Failure, Success}
   */
 object Boot extends App with Logging {
 
-  val datadir = new File(System.getProperty("eclair.datadir", System.getProperty("user.home") + "/.eclair"))
+  override def main(args: Array[String]): Unit = {
+    val datadir = new File(
+      System.getProperty("eclair.datadir",
+                         System.getProperty("user.home") + "/.eclair"))
 
-  try {
-    val plugins = Plugin.loadPlugins(args.map(new File(_)))
-    plugins.foreach(plugin => logger.info(s"loaded plugin ${plugin.getClass.getSimpleName}"))
-    implicit val system: ActorSystem = ActorSystem("eclair-node")
-    implicit val ec: ExecutionContext = system.dispatcher
-    val setup = new Setup(datadir)
-    plugins.foreach(_.onSetup(setup))
-    setup.bootstrap onComplete {
-      case Success(kit) => plugins.foreach(_.onKit(kit))
-      case Failure(t) => onError(t)
+    try {
+      val plugins = Plugin.loadPlugins(args.map(new File(_)))
+      plugins.foreach(plugin =>
+        logger.info(s"loaded plugin ${plugin.getClass.getSimpleName}"))
+      implicit val system: ActorSystem = ActorSystem("eclair-node")
+      implicit val ec: ExecutionContext = system.dispatcher
+      val setup = new Setup(datadir)
+      plugins.foreach(_.onSetup(setup))
+      setup.bootstrap onComplete {
+        case Success(kit) => plugins.foreach(_.onKit(kit))
+        case Failure(t)   => onError(t)
+      }
+    } catch {
+      case t: Throwable => onError(t)
     }
-  } catch {
-    case t: Throwable => onError(t)
+
+    def onError(t: Throwable): Unit = {
+      val errorMsg =
+        if (t.getMessage != null) t.getMessage else t.getClass.getSimpleName
+      System.err.println(s"fatal error: $errorMsg")
+      logger.error(s"fatal error: $errorMsg", t)
+      System.exit(1)
+    }
   }
 
-  def onError(t: Throwable): Unit = {
-    val errorMsg = if (t.getMessage != null) t.getMessage else t.getClass.getSimpleName
-    System.err.println(s"fatal error: $errorMsg")
-    logger.error(s"fatal error: $errorMsg", t)
-    System.exit(1)
-  }
 }

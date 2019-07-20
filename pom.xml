@@ -123,7 +123,6 @@
                         <arg>-feature</arg>
                         <arg>-language:postfixOps</arg>
                         <arg>-language:implicitConversions</arg>
-                        <arg>-Xfatal-warnings</arg>
                         <arg>-unchecked</arg>
                         <arg>-Xmax-classfile-name</arg>
                         <arg>140</arg>
