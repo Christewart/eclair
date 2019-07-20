@@ -39,7 +39,6 @@
                     <mainClass>
                         fr.acinq.eclair.Boot
                     </mainClass>
-                    <buildArgs>--initialize-at-run-time=org.sqlite.JDBC</buildArgs>
                 </configuration>
                 <executions>
                     <execution>
@@ -47,6 +46,9 @@
                             <goal>native-image</goal>
                         </goals>
                         <phase>package</phase>
+                        <configuration>
+                            <buildArgs>--initialize-at-build-time=org.sqlite.JDBC -cp ../eclair-core/target/</buildArgs>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
